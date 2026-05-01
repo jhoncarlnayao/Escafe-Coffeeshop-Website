@@ -7,65 +7,11 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
 <link rel="icon" type="image/png" href="logo.png" sizes="64x64"/>
+<link rel="stylesheet" href="styles.css"/>
 <script>
 tailwind.config={theme:{extend:{colors:{'kape':'#4a2c0a','gatas':'#f5eed8','latik':'#8b4513','pandan':'#2d6a2d','dahon':'#5a8a3a','langka':'#d4a017','silaw':'#f8f0dc'},fontFamily:{serif:['"DM Serif Display"','serif'],mono:['"DM Mono"','monospace'],italic:['"Instrument Serif"','serif']}}}}
 </script>
-<style>
-*{box-sizing:border-box}
-html,body{overflow:hidden;height:100%;width:100%;background:#14130a;margin:0;padding:0}
-.slide{position:absolute;inset:0;opacity:0;pointer-events:none;overflow:hidden}
-.slide.active{opacity:1;pointer-events:all}
-.slide.anim-in{animation:slideIn .65s cubic-bezier(.4,0,.2,1) forwards}
-.slide.anim-out{animation:slideOut .45s cubic-bezier(.4,0,.2,1) forwards}
-[data-in]{opacity:0}
-.ready [data-in]{animation:fadeInUp .65s cubic-bezier(.4,0,.2,1) forwards}
-.ready [data-in="1"]{animation-delay:.08s}
-.ready [data-in="2"]{animation-delay:.18s}
-.ready [data-in="3"]{animation-delay:.30s}
-.ready [data-in="4"]{animation-delay:.42s}
-.ready [data-in="5"]{animation-delay:.54s}
-@keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-@keyframes slideIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-@keyframes slideOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-18px)}}
-@keyframes pulseDot{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
-.pulse-dot{animation:pulseDot 2.5s ease-in-out infinite}
-.noise{position:fixed;inset:0;z-index:90;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-.img-sepia{filter:sepia(40%) brightness(.75) contrast(1.04)}
-.img-dark{filter:sepia(55%) brightness(.28)}
-.progress-bar{transition:width .6s cubic-bezier(.4,0,.2,1);background:linear-gradient(to right,#5a8a3a,rgba(90,138,58,.35))}
-.ghost-num{position:absolute;right:5vw;top:50%;transform:translateY(-50%);font-family:'DM Serif Display',serif;font-size:clamp(7rem,18vw,19rem);line-height:1;letter-spacing:-.05em;color:rgba(90,138,58,.025);pointer-events:none;z-index:0}
 
-/* SLIDE PANEL */
-#slide-panel{position:fixed;top:0;right:0;height:100%;width:200px;background:rgba(12,9,5,.96);border-left:1px solid rgba(255,255,255,.07);z-index:200;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);overflow-y:auto;overflow-x:hidden;padding:12px 10px 12px 10px;display:flex;flex-direction:column;gap:8px}
-#slide-panel.open{transform:translateX(0)}
-#slide-panel::-webkit-scrollbar{width:3px}
-#slide-panel::-webkit-scrollbar-track{background:transparent}
-#slide-panel::-webkit-scrollbar-thumb{background:rgba(90,138,58,.35);border-radius:2px}
-.thumb-item{cursor:pointer;border:1.5px solid rgba(255,255,255,.08);border-radius:3px;overflow:hidden;transition:border-color .2s,transform .15s;flex-shrink:0}
-.thumb-item:hover{border-color:rgba(90,138,58,.5);transform:scale(1.01)}
-.thumb-item.active-thumb{border-color:#5a8a3a;box-shadow:0 0 0 2px rgba(90,138,58,.25)}
-.thumb-num{font-family:'DM Mono',monospace;font-size:.48rem;letter-spacing:.14em;color:rgba(245,238,216,.3);padding:3px 6px;background:rgba(0,0,0,.6)}
-.thumb-label{font-size:.52rem;letter-spacing:.1em;color:rgba(245,238,216,.55);padding:4px 6px 5px;text-transform:uppercase;background:rgba(10,8,4,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-/* DECK */
-#deck{position:relative;width:100vw;height:100vh}
-.slide{bottom:0;top:0}
-
-/* Nav arrows */
-#nav-prev,#nav-next{position:fixed;bottom:24px;z-index:190;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.12);color:#f5eed8;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:.85rem}
-#nav-prev{left:20px}
-#nav-next{right:20px}
-#nav-prev:hover,#nav-next:hover{border-color:#5a8a3a;background:rgba(90,138,58,.12);color:#5a8a3a}
-
-/* Toggle button */
-#panel-toggle{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:210;background:rgba(90,138,58,.85);color:#f5eed8;border:none;cursor:pointer;writing-mode:vertical-rl;padding:14px 7px;font-family:'DM Mono',monospace;font-size:.48rem;letter-spacing:.2em;text-transform:uppercase;transition:background .2s;border-radius:4px 0 0 4px}
-#panel-toggle:hover{background:rgba(90,138,58,1)}
-
-/* Social icons */
-.soc-card{display:flex;align-items:center;gap:16px;padding:18px 24px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);transition:border-color .2s,background .2s;cursor:default}
-.soc-card:hover{border-color:rgba(90,138,58,.4);background:rgba(90,138,58,.06)}
-.soc-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem}
-</style>
 </head>
 <body class="font-mono text-[#f5eed8] select-none cursor-default">
 
@@ -659,104 +605,7 @@ Not just a place for coffee — but a quiet escape from the noise. A space where
 <!-- HINT -->
 <div class="fixed z-[80] text-[.48rem] tracking-[.16em] uppercase" style="bottom:10px;right:14px;color:rgba(245,238,216,.1)">← → · Space · F</div>
 
-<script>
-const slides = Array.from(document.querySelectorAll('.slide'));
-const total = slides.length;
-let cur = 0, busy = false;
-const pad = n => String(n).padStart(2,'0');
-
-const BG_IMGS = [
-  'https://i.pinimg.com/736x/62/f7/d0/62f7d0ec48250067cfa25668d02a4f45.jpg',
-  'https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=200&q=60&fit=crop',
-  null,
-  'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=200&q=60&fit=crop',
-  'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200&q=60&fit=crop',
-  'https://images.unsplash.com/photo-1567521464027-f127ff144326?w=200&q=60&fit=crop',
-  'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=200&q=60&fit=crop',
-  'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=200&q=60&fit=crop',
-  'https://images.unsplash.com/photo-1453614512568-c4024d13c247?w=200&q=60&fit=crop',
-  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=60&fit=crop',
-  'https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=200&q=60&fit=crop',
-  'https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=200&q=60&fit=crop',
-  'https://images.unsplash.com/photo-1500576992153-0271099def59?w=200&q=60&fit=crop',
-  'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=200&q=60&fit=crop',
-];
-const COLORS = ['#1a1208','#14130a','#1c1810','#14130a','#0e0c08','#1a1208','#14130a','#14130a','#0e0c08','#14130a','#1a1208','#0e0c08','#14130a','#0e0c08'];
-
-const panel = document.getElementById('slide-panel');
-
-slides.forEach((s, i) => {
-  const label = s.getAttribute('data-label') || `Slide ${i+1}`;
-  const img = BG_IMGS[i];
-  const pDiv = document.createElement('div');
-  pDiv.className = 'thumb-item' + (i===0?' active-thumb':'');
-  pDiv.onclick = () => goTo(i);
-  pDiv.innerHTML = `
-    <div style="height:72px;background:${img ? `url(${img}) center/cover` : COLORS[i]};position:relative;">
-      ${img ? `<div style="position:absolute;inset:0;background:rgba(10,8,4,.38);filter:sepia(40%) brightness(.7)"></div>` : ''}
-      <span class="thumb-num" style="position:absolute;top:4px;left:5px">${pad(i+1)}</span>
-    </div>
-    <div class="thumb-label">${label}</div>`;
-  panel.appendChild(pDiv);
-});
-
-function updateUI() {
-  const lbl = `${pad(cur+1)} / ${pad(total)}`;
-  document.getElementById('slide-counter').textContent = lbl;
-  document.getElementById('hud-num').textContent = lbl;
-  document.getElementById('progress').style.width = `${((cur+1)/total)*100}%`;
-  panel.querySelectorAll('.thumb-item').forEach((el,i) => {
-    el.classList.toggle('active-thumb', i===cur);
-  });
-  const activePanelThumb = panel.querySelectorAll('.thumb-item')[cur];
-  if(activePanelThumb) activePanelThumb.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-
-function triggerAnims(s) {
-  s.classList.remove('ready');
-  void s.offsetWidth;
-  s.classList.add('ready');
-}
-
-function goTo(idx) {
-  if(busy || idx<0 || idx>=total || idx===cur) return;
-  busy = true;
-  const leaving = slides[cur];
-  leaving.classList.add('anim-out');
-  leaving.classList.remove('active','ready');
-  setTimeout(() => leaving.classList.remove('anim-out'), 460);
-  cur = idx;
-  const entering = slides[cur];
-  entering.classList.add('active','anim-in');
-  setTimeout(() => {
-    entering.classList.remove('anim-in');
-    triggerAnims(entering);
-    busy = false;
-  }, 50);
-  updateUI();
-}
-
-function go(d){ goTo(cur+d); }
-
-let panelOpen = false;
-function togglePanel(){
-  panelOpen = !panelOpen;
-  document.getElementById('slide-panel').classList.toggle('open', panelOpen);
-}
-
-document.addEventListener('keydown', e => {
-  if([' ','ArrowRight','ArrowDown'].includes(e.key)){e.preventDefault();go(1);}
-  if(['ArrowLeft','ArrowUp'].includes(e.key)){e.preventDefault();go(-1);}
-  if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
-  if(e.key==='Escape'&&panelOpen){togglePanel();}
-});
-
-document.getElementById('deck').addEventListener('click', e => {
-  if(!e.target.closest('button')) go(1);
-});
-
-updateUI();
-setTimeout(()=>triggerAnims(slides[0]),100);
+<script src="script.js">
 </script>
 </body>
 </html>
