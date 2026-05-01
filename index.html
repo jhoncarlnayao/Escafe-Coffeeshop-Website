@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Escafe</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+<link rel="icon" type="image/png" href="logo.png" sizes="64x64"/>
+<script>
+tailwind.config={theme:{extend:{colors:{'kape':'#4a2c0a','gatas':'#f5eed8','latik':'#8b4513','pandan':'#2d6a2d','dahon':'#5a8a3a','langka':'#d4a017','silaw':'#f8f0dc'},fontFamily:{serif:['"DM Serif Display"','serif'],mono:['"DM Mono"','monospace'],italic:['"Instrument Serif"','serif']}}}}
+</script>
+<style>
+*{box-sizing:border-box}
+html,body{overflow:hidden;height:100%;width:100%;background:#14130a;margin:0;padding:0}
+.slide{position:absolute;inset:0;opacity:0;pointer-events:none;overflow:hidden}
+.slide.active{opacity:1;pointer-events:all}
+.slide.anim-in{animation:slideIn .65s cubic-bezier(.4,0,.2,1) forwards}
+.slide.anim-out{animation:slideOut .45s cubic-bezier(.4,0,.2,1) forwards}
+[data-in]{opacity:0}
+.ready [data-in]{animation:fadeInUp .65s cubic-bezier(.4,0,.2,1) forwards}
+.ready [data-in="1"]{animation-delay:.08s}
+.ready [data-in="2"]{animation-delay:.18s}
+.ready [data-in="3"]{animation-delay:.30s}
+.ready [data-in="4"]{animation-delay:.42s}
+.ready [data-in="5"]{animation-delay:.54s}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-18px)}}
+@keyframes pulseDot{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+.pulse-dot{animation:pulseDot 2.5s ease-in-out infinite}
+.noise{position:fixed;inset:0;z-index:90;pointer-events:none;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.img-sepia{filter:sepia(40%) brightness(.75) contrast(1.04)}
+.img-dark{filter:sepia(55%) brightness(.28)}
+.progress-bar{transition:width .6s cubic-bezier(.4,0,.2,1);background:linear-gradient(to right,#5a8a3a,rgba(90,138,58,.35))}
+.ghost-num{position:absolute;right:5vw;top:50%;transform:translateY(-50%);font-family:'DM Serif Display',serif;font-size:clamp(7rem,18vw,19rem);line-height:1;letter-spacing:-.05em;color:rgba(90,138,58,.025);pointer-events:none;z-index:0}
+
+/* SLIDE PANEL */
+#slide-panel{position:fixed;top:0;right:0;height:100%;width:200px;background:rgba(12,9,5,.96);border-left:1px solid rgba(255,255,255,.07);z-index:200;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);overflow-y:auto;overflow-x:hidden;padding:12px 10px 12px 10px;display:flex;flex-direction:column;gap:8px}
+#slide-panel.open{transform:translateX(0)}
+#slide-panel::-webkit-scrollbar{width:3px}
+#slide-panel::-webkit-scrollbar-track{background:transparent}
+#slide-panel::-webkit-scrollbar-thumb{background:rgba(90,138,58,.35);border-radius:2px}
+.thumb-item{cursor:pointer;border:1.5px solid rgba(255,255,255,.08);border-radius:3px;overflow:hidden;transition:border-color .2s,transform .15s;flex-shrink:0}
+.thumb-item:hover{border-color:rgba(90,138,58,.5);transform:scale(1.01)}
+.thumb-item.active-thumb{border-color:#5a8a3a;box-shadow:0 0 0 2px rgba(90,138,58,.25)}
+.thumb-num{font-family:'DM Mono',monospace;font-size:.48rem;letter-spacing:.14em;color:rgba(245,238,216,.3);padding:3px 6px;background:rgba(0,0,0,.6)}
+.thumb-label{font-size:.52rem;letter-spacing:.1em;color:rgba(245,238,216,.55);padding:4px 6px 5px;text-transform:uppercase;background:rgba(10,8,4,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* DECK */
+#deck{position:relative;width:100vw;height:100vh}
+.slide{bottom:0;top:0}
+
+/* Nav arrows */
+#nav-prev,#nav-next{position:fixed;bottom:24px;z-index:190;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.12);color:#f5eed8;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:.85rem}
+#nav-prev{left:20px}
+#nav-next{right:20px}
+#nav-prev:hover,#nav-next:hover{border-color:#5a8a3a;background:rgba(90,138,58,.12);color:#5a8a3a}
+
+/* Toggle button */
+#panel-toggle{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:210;background:rgba(90,138,58,.85);color:#f5eed8;border:none;cursor:pointer;writing-mode:vertical-rl;padding:14px 7px;font-family:'DM Mono',monospace;font-size:.48rem;letter-spacing:.2em;text-transform:uppercase;transition:background .2s;border-radius:4px 0 0 4px}
+#panel-toggle:hover{background:rgba(90,138,58,1)}
+
+/* Social icons */
+.soc-card{display:flex;align-items:center;gap:16px;padding:18px 24px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);transition:border-color .2s,background .2s;cursor:default}
+.soc-card:hover{border-color:rgba(90,138,58,.4);background:rgba(90,138,58,.06)}
+.soc-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem}
+</style>
+</head>
+<body class="font-mono text-[#f5eed8] select-none cursor-default">
+
+<div class="noise"></div>
+
+<!-- HUD -->
+<div class="fixed top-0 left-0 right-0 z-[80] px-10 py-5 flex justify-between items-center pointer-events-none" style="background:linear-gradient(to bottom,rgba(10,8,5,.7),transparent)">
+  <div class="flex items-center gap-2 text-[.55rem] tracking-[.24em] uppercase text-[rgba(245,238,216,.18)]">
+    <div class="w-[5px] h-[5px] rounded-full bg-dahon pulse-dot opacity-70"></div>
+    Davao City · Fuujin
+  </div>
+  <div id="hud-num" class="text-[.55rem] tracking-[.2em] text-[rgba(245,238,216,.18)]">01 / 14</div>
+</div>
+
+<!-- PROGRESS BAR -->
+<div class="fixed top-0 left-0 z-[80] h-[2px] progress-bar" id="progress" style="width:7.14%"></div>
+
+<!-- PANEL TOGGLE -->
+<button id="panel-toggle" onclick="togglePanel()">Slides</button>
+
+<!-- SLIDE PANEL -->
+<div id="slide-panel">
+  <div class="text-[.48rem] tracking-[.2em] uppercase text-[rgba(245,238,216,.2)] mb-1 px-1">All Slides</div>
+</div>
+
+<!-- DECK -->
+<div id="deck">
+
+  <!-- 01 COVER -->
+  <div class="slide active" id="s01" data-label="Cover">
+    <div class="grid grid-cols-2 h-full">
+      <div class="flex flex-col justify-center px-[8vw] py-[8vw] z-10 relative" style="background:#14130a">
+        <div data-in="1" class="text-[.57rem] tracking-[.28em] uppercase text-dahon mb-9">Escafe · Davao City</div>
+        <h1 data-in="2" class="font-serif leading-[.95] tracking-[-0.03em] text-[#f5eed8]" style="font-size:clamp(2.8rem,8vw,8rem)">Escape<br><span style="font-family:'Instrument Serif',serif;font-style:italic;color:#5a8a3a">Through<br>Coffee..</span></h1>
+        <div data-in="3" class="w-14 h-px opacity-50 my-4" style="background:#5a8a3a"></div>
+<p data-in="4" class="text-[.8rem] leading-[1.85] text-[rgba(245,238,216,.45)] max-w-[380px]">
+Not just a place for coffee — but a quiet escape from the noise. A space where slow mornings, deep talks, and warm cups come together to make you feel at home.
+</p>        <div data-in="5" class="flex gap-3 flex-wrap mt-6">
+          <span class="text-[.54rem] tracking-[.16em] uppercase border text-dahon px-3 py-1 transition-colors" style="border-color:rgba(90,138,58,.35)">Handcrafted Coffee</span>
+          <span class="text-[.54rem] tracking-[.16em] uppercase border text-dahon px-3 py-1 transition-colors" style="border-color:rgba(90,138,58,.35)">Community</span>
+          <span class="text-[.54rem] tracking-[.16em] uppercase border text-dahon px-3 py-1 transition-colors" style="border-color:rgba(90,138,58,.35)">Culture</span>
+        </div>
+      </div>
+      <div class="relative overflow-hidden">
+        <img src="https://i.pinimg.com/736x/62/f7/d0/62f7d0ec48250067cfa25668d02a4f45.jpg" class="w-full h-full object-cover img-sepia" alt="Coffee shop"/>
+        <div class="absolute inset-0" style="background:linear-gradient(to right,#14130a 0%,transparent 40%)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02 THE PROBLEM -->
+  <div class="slide" id="s02" data-label="The Problem">
+    <div class="absolute inset-0">
+      <img src="https://i.pinimg.com/1200x/11/c2/51/11c251ef422ae61b7a2c583b98a9248c.jpg" class="w-full h-full object-cover img-dark" alt="Coffee brewing"/>
+      <div class="absolute inset-0" style="background:linear-gradient(to right,rgba(20,19,10,.94) 45%,rgba(20,19,10,.3) 100%)"></div>
+    </div>
+    <div class="relative z-10 flex items-center h-full px-[8vw]">
+      <div class="max-w-[620px]">
+        <div data-in="1" class="text-[.58rem] tracking-[.26em] uppercase text-dahon">The problem</div>
+        <h2 data-in="2" class="font-serif leading-[1.02] tracking-[-0.02em] text-[#f5eed8] mt-3" style="font-size:clamp(1.9rem,5vw,5.8rem)">Great coffee<br>is easy to find.<br>A great place<br>is not.</h2>
+        <div data-in="3" class="w-14 h-px opacity-50 my-4" style="background:#5a8a3a"></div>
+        <p data-in="4" class="leading-[1.9] max-w-[500px]" style="font-size:clamp(.78rem,1.15vw,.95rem);color:rgba(245,238,216,.7)">Chains that only care about speed. Specialty shops that feel unwelcoming. Nobody built a space that is both genuinely excellent and genuinely warm. We decided someone should.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 03 QUOTE -->
+  <div class="slide" id="s03" data-label="Quote">
+    <div class="absolute top-[2vh] left-[6vw] font-serif pointer-events-none leading-[.75]" style="font-size:clamp(10rem,25vw,22rem);color:rgba(90,138,58,.04)">"</div>
+    <div class="flex flex-col justify-center h-full px-[8vw] relative z-10">
+      <blockquote data-in="1" class="text-[#f5eed8] leading-[1.22] tracking-[-0.015em] max-w-[820px]" style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(1.8rem,3.8vw,4rem)">Coffee is never just a drink. It is a place, a pause, a stranger you haven't met yet who is waiting at the next table.</blockquote>
+      <cite data-in="2" class="block mt-8 not-italic text-[.62rem] tracking-[.2em] uppercase text-dahon">— On what we are really building</cite>
+    </div>
+    <div class="ghost-num">03</div>
+  </div>
+
+  <!-- 04 FOUR PILLARS -->
+<div class="slide" id="s04" data-label="Four Pillars">
+  <div class="grid h-full" style="grid-template-columns:52% 48%">
+    <div class="flex flex-col justify-center py-[7vw] pl-[8vw] pr-[3vw] z-10" style="background:#14130a">
+      <div data-in="1" class="text-[.58rem] tracking-[.26em] uppercase text-dahon">Four pillars</div>
+
+      <h2 data-in="2" class="font-serif leading-[1.02] tracking-[-0.02em] text-[#f5eed8] mt-3" style="font-size:clamp(1.7rem,4vw,4.5rem)">
+        What we are<br>actually building.
+      </h2>
+
+      <p data-in="3" class="mt-5 max-w-[520px] leading-[1.9]" style="font-size:clamp(.76rem,1.05vw,.92rem);color:rgba(245,238,216,.45)">
+        More than just a café, Escafe is built around experiences people remember — meaningful coffee, genuine connections, and a space that quietly feels like an escape from everyday life.
+      </p>
+
+      <div data-in="4" class="flex flex-col mt-6">
+        <div class="flex gap-4 items-start py-4 border-b" style="border-color:rgba(255,255,255,.06)">
+          <span class="text-[.54rem] tracking-[.16em] text-dahon min-w-[1.6rem] pt-[.12rem]">01</span>
+          <p class="leading-[1.75]" style="font-size:clamp(.73rem,1.05vw,.88rem);color:rgba(245,238,216,.7)">
+            <strong class="font-medium text-[#f5eed8]">Origin excellence.</strong>
+            Carefully selected beans crafted to bring warmth, depth, and consistency in every cup.
+          </p>
+        </div>
+
+        <div class="flex gap-4 items-start py-4 border-b" style="border-color:rgba(255,255,255,.06)">
+          <span class="text-[.54rem] tracking-[.16em] text-dahon min-w-[1.6rem] pt-[.12rem]">02</span>
+          <p class="leading-[1.75]" style="font-size:clamp(.73rem,1.05vw,.88rem);color:rgba(245,238,216,.7)">
+            <strong class="font-medium text-[#f5eed8]">Comfort without pressure.</strong>
+            A welcoming atmosphere where anyone can slow down, relax, and simply enjoy the moment.
+          </p>
+        </div>
+
+        <div class="flex gap-4 items-start py-4 border-b" style="border-color:rgba(255,255,255,.06)">
+          <span class="text-[.54rem] tracking-[.16em] text-dahon min-w-[1.6rem] pt-[.12rem]">03</span>
+          <p class="leading-[1.75]" style="font-size:clamp(.73rem,1.05vw,.88rem);color:rgba(245,238,216,.7)">
+            <strong class="font-medium text-[#f5eed8]">Real connection.</strong>
+            Designed to bring people together through conversations, creativity, and shared experiences.
+          </p>
+        </div>
+
+        <div class="flex gap-4 items-start py-4">
+          <span class="text-[.54rem] tracking-[.16em] text-dahon min-w-[1.6rem] pt-[.12rem]">04</span>
+          <p class="leading-[1.75]" style="font-size:clamp(.73rem,1.05vw,.88rem);color:rgba(245,238,216,.7)">
+            <strong class="font-medium text-[#f5eed8]">An escape in every detail.</strong>
+            From lighting to music, every corner is intentionally designed to make people stay a little longer.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="relative overflow-hidden">
+      <img src="https://i.pinimg.com/736x/29/ea/96/29ea96a007653811b5e64c699bc0483f.jpg" class="w-full h-full object-cover" style="filter:sepia(30%) brightness(.72)" alt="Coffee bar"/>
+      <div class="absolute inset-0" style="background:linear-gradient(to right,#14130a 0%,transparent 35%)"></div>
+    </div>
+  </div>
+</div>
+
+  <!-- 05 STATS -->
+  <div class="slide" id="s05" data-label="The Numbers">
+    <div class="absolute inset-0">
+        
+      <img src="Instagram post - 56.png" class="w-full h-full object-cover" style="filter:sepia(60%) brightness(.18)" alt="Coffee"/>
+    </div>
+    <div class="relative z-10 flex flex-col justify-center h-full px-[8vw] py-[7vw]">
+      <div data-in="1" class="text-[.58rem] tracking-[.26em] uppercase text-dahon">By the numbers</div>
+      <h2 data-in="2" class="font-serif leading-[1.02] tracking-[-0.02em] text-[#f5eed8] mt-3" style="font-size:clamp(1.7rem,4vw,4rem)">What three years<br>looks like.</h2>
+      <div data-in="3" class="grid grid-cols-4 gap-px mt-8" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.05)">
+        <div class="p-7 transition-colors" style="background:rgba(20,19,10,.88)">
+          <div class="text-[.54rem] tracking-[.2em] uppercase text-dahon mb-2">Daily visitors</div>
+          <div class="font-serif tracking-[-0.03em] text-[#f5eed8]" style="font-size:clamp(1.7rem,3.2vw,2.8rem)">840</div>
+          <p class="text-[.65rem] leading-[1.65] mt-2" style="color:rgba(245,238,216,.45)">across two locations, up 38% year-over-year with zero loyalty program</p>
+        </div>
+        <div class="p-7 transition-colors" style="background:rgba(20,19,10,.88)">
+          <div class="text-[.54rem] tracking-[.2em] uppercase text-dahon mb-2">Return rate</div>
+          <div class="font-serif tracking-[-0.03em] text-[#f5eed8]" style="font-size:clamp(1.7rem,3.2vw,2.8rem)">74%</div>
+          <p class="text-[.65rem] leading-[1.65] mt-2" style="color:rgba(245,238,216,.45)">of visitors return within the same week — most within 48 hours</p>
+        </div>
+        <div class="p-7 transition-colors" style="background:rgba(20,19,10,.88)">
+          <div class="text-[.54rem] tracking-[.2em] uppercase text-dahon mb-2">Avg. dwell time</div>
+          <div class="font-serif tracking-[-0.03em] text-[#f5eed8]" style="font-size:clamp(1.7rem,3.2vw,2.8rem)">52 min</div>
+          <p class="text-[.65rem] leading-[1.65] mt-2" style="color:rgba(245,238,216,.45)">nearly double the industry average — our strongest signal</p>
+        </div>
+        <div class="p-7 transition-colors" style="background:rgba(20,19,10,.88)">
+          <div class="text-[.54rem] tracking-[.2em] uppercase text-dahon mb-2">Farm partners</div>
+          <div class="font-serif tracking-[-0.03em] text-[#f5eed8]" style="font-size:clamp(1.7rem,3.2vw,2.8rem)">12</div>
+          <p class="text-[.65rem] leading-[1.65] mt-2" style="color:rgba(245,238,216,.45)">farms across Benguet, Sagada, Mt. Apo, Davao — all direct trade</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 06 VS -->
+  <div class="slide" id="s06" data-label="Chain vs. Us">
+    <div class="flex flex-col justify-center h-full px-[8vw] py-[7vw]">
+      <div data-in="1" class="text-[.58rem] tracking-[.26em] uppercase text-dahon">The landscape</div>
+      <h2 data-in="2" class="font-serif leading-[1.02] tracking-[-0.02em] text-[#f5eed8] mt-3" style="font-size:clamp(1.7rem,4vw,4.5rem)">Chain<br>versus<br>made with heart.</h2>
+      <div data-in="3" class="grid grid-cols-2 gap-px max-w-[820px] mt-6" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06)">
+        <div class="overflow-hidden" style="background:#14130a">
+          <img src="https://images.unsplash.com/photo-1567521464027-f127ff144326?w=600&q=80&fit=crop" class="w-full h-[130px] object-cover" style="filter:sepia(45%) brightness(.62)" alt="Chain coffee"/>
+          <div class="p-7">
+            <div class="font-serif tracking-[-0.01em] mb-3" style="font-size:clamp(1.1rem,2vw,1.75rem)">The chain</div>
+            <p class="leading-[1.82]" style="font-size:clamp(.72rem,1.05vw,.86rem);color:rgba(245,238,216,.7)">Consistent, fast, on every corner. A reliable 6/10 anywhere you go. You know what you are getting — which is fine, until you have had a 9.</p>
+          </div>
+        </div>
+        <div class="overflow-hidden" style="background:#1a1208">
+          <img src="https://images.unsplash.com/photo-1514066558159-fc8c737ef259?w=600&q=80&fit=crop" class="w-full h-[130px] object-cover" style="filter:sepia(25%) brightness(.72)" alt="Craft coffee"/>
+          <div class="p-7">
+            <div class="font-serif tracking-[-0.01em] mb-3 text-dahon" style="font-size:clamp(1.1rem,2vw,1.75rem)">Escafe</div>
+            <p class="leading-[1.82]" style="font-size:clamp(.72rem,1.05vw,.86rem);color:rgba(245,238,216,.7)">The 9 — without the cold welcome. Exceptional coffee in a room designed for people, not queues. Warm on day one, a habit by day three.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ghost-num">06</div>
+  </div>
+
+  <!-- 07 QUOTE 2 -->
+  <div class="slide" id="s07" data-label="Quote: Barista">
+    <div class="grid grid-cols-2 h-full">
+      <div class="relative overflow-hidden">
+        <img src="https://i.pinimg.com/736x/ac/0d/6c/ac0d6c66276d5c481c225b8b73477793.jpg" class="w-full h-full object-cover" style="filter:sepia(35%) brightness(.68)" alt="Barista"/>
+        <div class="absolute inset-0" style="background:linear-gradient(to left,#14130a 0%,transparent 50%)"></div>
+      </div>
+      <div class="flex flex-col justify-center px-[4vw] pr-[7vw]" style="background:#14130a">
+        <div data-in="1" class="text-[.58rem] tracking-[.26em] uppercase text-dahon">On our baristas</div>
+        <blockquote data-in="2" class="text-[#f5eed8] leading-[1.25] tracking-[-0.01em] mt-4" style="font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(1.5rem,3vw,3.2rem)">The best baristas do not just make coffee. They read the room, set the tone, and decide what kind of morning everyone is going to have.</blockquote>
+        <cite data-in="3" class="block mt-8 not-italic text-[.62rem] tracking-[.2em] uppercase text-dahon">— On the people behind the counter</cite>
+      </div>
+    </div>
+  </div>
+
+  <!-- 08 MISSION -->
+  <div class="slide" id="s08" data-label="Mission">
+    <div class="grid grid-cols-2 h-full">
+      <div class="flex flex-col justify-center py-[7vw] pl-[8vw] pr-[3.5vw]" style="background:#14130a">
+        <div data-in="1" class="text-[.58rem] tracking-[.26em] uppercase text-dahon">Who we are</div>
+        <h2 data-in="2" class="font-serif leading-[1.02] tracking-[-0.02em] text-[#f5eed8] mt-3" style="font-size:clamp(1.7rem,4vw,4.2rem)">Why we<br>opened.</h2>
+        <div data-in="3" class="flex flex-col mt-6">
+          <div class="flex gap-5 items-start py-5 border-b" style="border-color:rgba(255,255,255,.06)">
+            <div class="min-w-[1.4rem] leading-none pt-[.08rem] text-lg" style="color:rgba(90,138,58,.2)">◎</div>
+            <div>
+              <div class="text-[.54rem] tracking-[.2em] uppercase text-dahon mb-1">Mission</div>
+              <p class="leading-[1.78]" style="font-size:clamp(.72rem,1.05vw,.86rem);color:rgba(245,238,216,.7)">Make exceptional coffee feel like home. We are not a waiting room. We are a place where people belong.</p>
+            </div>
+          </div>
+          <div class="flex gap-5 items-start py-5 border-b" style="border-color:rgba(255,255,255,.06)">
+            <div class="min-w-[1.4rem] leading-none pt-[.08rem] text-lg" style="color:rgba(90,138,58,.2)">◈</div>
+            <div>
+              <div class="text-[.54rem] tracking-[.2em] uppercase text-dahon mb-1">Vision</div>
+              <p class="leading-[1.78]" style="font-size:clamp(.72rem,1.05vw,.86rem);color:rgba(245,238,216,.7)">A neighborhood cornerstone — the kind of place mentioned in the same breath as the neighborhood itself.</p>
+            </div>
+          </div>
+          <div class="flex gap-5 items-start py-5">
+            <div class="min-w-[1.4rem] leading-none pt-[.08rem] text-lg" style="color:rgba(90,138,58,.2)">◇</div>
+            <div>
+              <div class="text-[.54rem] tracking-[.2em] uppercase text-dahon mb-1">How we work</div>
+              <p class="leading-[1.78]" style="font-size:clamp(.72rem,1.05vw,.86rem);color:rgba(245,238,216,.7)">Slowly and with purpose. We have turned down two franchise offers to stay independent and good.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="relative overflow-hidden">
+        <img src="https://i.pinimg.com/736x/7e/cb/b7/7ecbb783920f16a810a7383678207752.jpg" class="w-full h-full object-cover" style="filter:sepia(25%) brightness(.62) contrast(1.05)" alt="Café interior"/>
+        <div class="absolute inset-0 z-10" style="background:linear-gradient(to right,#14130a 0%,transparent 28%)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 09 TEAM INTRO -->
+  <div class="slide" id="s09" data-label="The Team">
+    <div class="absolute inset-0">
+      <img src="https://images.unsplash.com/photo-1453614512568-c4024d13c247?w=1400&q=75&fit=crop" class="w-full h-full object-cover" style="filter:sepia(40%) brightness(.36)" alt="Team"/>
+      <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(20,19,10,.95) 35%,rgba(20,19,10,.22) 100%)"></div>
+    </div>
+    <div class="relative z-10 flex items-end h-full px-[8vw] pb-[8vw]">
+      <div class="max-w-[660px]">
+        <div data-in="1" class="text-[.58rem] tracking-[.26em] uppercase text-dahon">The people</div>
+        <h2 data-in="2" class="font-serif leading-[1.02] tracking-[-0.02em] text-[#f5eed8] mt-3" style="font-size:clamp(1.9rem,5vw,5.8rem)">Built by regulars<br>for regulars.</h2>
+        <div data-in="3" class="w-14 h-px opacity-50 my-4" style="background:#5a8a3a"></div>
+        <p data-in="4" class="leading-[1.9] max-w-[520px]" style="font-size:clamp(.78rem,1.15vw,.95rem);color:rgba(245,238,216,.7)">Every one of us arrived as a customer first. We are the ones who stayed too long, talked to the barista, and eventually asked if we could help with anything.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 TEAM GRID -->
+  <div class="slide" id="s10" data-label="Team Grid">
+    <div class="flex flex-col justify-center h-full px-[8vw] py-[4.5vw]">
+      <div data-in="1" class="flex items-end justify-between mb-5">
+        <div>
+          <div class="text-[.58rem] tracking-[.26em] uppercase text-dahon">The team</div>
+          <h3 class="font-serif leading-[1.1] tracking-[-0.015em] text-[#f5eed8] mt-1" style="font-size:clamp(1.3rem,2.8vw,3rem)">Six people. One obsession.</h3>
+        </div>
+        <div class="font-serif tracking-[-0.02em]" style="font-size:clamp(1rem,2vw,1.6rem);color:rgba(245,238,216,.1)">06 / 06</div>
+      </div>
+      <div data-in="2" class="grid grid-cols-3 gap-px" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06)">
+        <div class="overflow-hidden transition-colors" style="background:#14130a">
+          <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&q=80&fit=crop&crop=faces" class="w-full h-[100px] object-cover object-top img-sepia" alt="Maria Santos"/>
+          <div class="p-4">
+            <div class="font-serif tracking-[-0.01em] text-[#f5eed8] mb-0.5" style="font-size:clamp(.88rem,1.4vw,1.2rem)">Maria Santos</div>
+            <div class="text-[.54rem] tracking-[.18em] uppercase text-dahon mb-2">Founder · Creative</div>
+            <p class="text-[.64rem] leading-[1.65]" style="color:rgba(245,238,216,.45)">Former interior architect. Spent ten years designing spaces for other brands before deciding to design one for herself.</p>
+          </div>
+        </div>
+        <div class="overflow-hidden transition-colors" style="background:#14130a">
+          <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80&fit=crop&crop=faces" class="w-full h-[100px] object-cover object-top img-sepia" alt="Andres Reyes"/>
+          <div class="p-4">
+            <div class="font-serif tracking-[-0.01em] text-[#f5eed8] mb-0.5" style="font-size:clamp(.88rem,1.4vw,1.2rem)">Andres Reyes</div>
+            <div class="text-[.54rem] tracking-[.18em] uppercase text-dahon mb-2">Head Roaster</div>
+            <p class="text-[.64rem] leading-[1.65]" style="color:rgba(245,238,216,.45)">SCA-certified roast master. Competed. Won some things. Stopped competing when the coffee became better than the trophies.</p>
+          </div>
+        </div>
+        <div class="overflow-hidden transition-colors" style="background:#14130a">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80&fit=crop&crop=faces" class="w-full h-[100px] object-cover object-top img-sepia" alt="Jasmine Dela Cruz"/>
+          <div class="p-4">
+            <div class="font-serif tracking-[-0.01em] text-[#f5eed8] mb-0.5" style="font-size:clamp(.88rem,1.4vw,1.2rem)">Jasmine Dela Cruz</div>
+            <div class="text-[.54rem] tracking-[.18em] uppercase text-dahon mb-2">Head of Community</div>
+            <p class="text-[.64rem] leading-[1.65]" style="color:rgba(245,238,216,.45)">Previously ran cultural programs at a museum. Now runs our events, the regulars group, and most of our best ideas since 2022.</p>
+          </div>
+        </div>
+        <div class="overflow-hidden transition-colors" style="background:#14130a">
+          <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80&fit=crop&crop=faces" class="w-full h-[100px] object-cover object-top img-sepia" alt="Carlo Bautista"/>
+          <div class="p-4">
+            <div class="font-serif tracking-[-0.01em] text-[#f5eed8] mb-0.5" style="font-size:clamp(.88rem,1.4vw,1.2rem)">Carlo Bautista</div>
+            <div class="text-[.54rem] tracking-[.18em] uppercase text-dahon mb-2">Operations</div>
+            <p class="text-[.64rem] leading-[1.65]" style="color:rgba(245,238,216,.45)">Ran supply chain for a specialty grocer. Brings the same precision here — every bean tracked, every vendor visited, every system documented.</p>
+          </div>
+        </div>
+        <div class="overflow-hidden transition-colors" style="background:#14130a">
+          <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&q=80&fit=crop&crop=faces" class="w-full h-[100px] object-cover object-top img-sepia" alt="Rina Aquino"/>
+          <div class="p-4">
+            <div class="font-serif tracking-[-0.01em] text-[#f5eed8] mb-0.5" style="font-size:clamp(.88rem,1.4vw,1.2rem)">Rina Aquino</div>
+            <div class="text-[.54rem] tracking-[.18em] uppercase text-dahon mb-2">Bar Lead · Training</div>
+            <p class="text-[.64rem] leading-[1.65]" style="color:rgba(245,238,216,.45)">15 years behind espresso machines across four countries. Every barista we have hired was trained personally by Rina.</p>
+          </div>
+        </div>
+        <div class="overflow-hidden transition-colors" style="background:#14130a">
+          <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80&fit=crop&crop=faces" class="w-full h-[100px] object-cover object-top img-sepia" alt="Miguel Garcia"/>
+          <div class="p-4">
+            <div class="font-serif tracking-[-0.01em] text-[#f5eed8] mb-0.5" style="font-size:clamp(.88rem,1.4vw,1.2rem)">Miguel Garcia</div>
+            <div class="text-[.54rem] tracking-[.18em] uppercase text-dahon mb-2">Finance · Growth</div>
+            <p class="text-[.64rem] leading-[1.65]" style="color:rgba(245,238,216,.45)">The reason the numbers work. Declined two acquisition offers on our behalf before we even knew about them. He was right.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11 TIMELINE -->
+  <div class="slide" id="s11" data-label="Our Story">
+    <div class="grid h-full" style="grid-template-columns:40% 60%">
+      <div class="flex flex-col justify-center py-[7vw] pl-[8vw] pr-[3vw]" style="background:#1a1208">
+        <div data-in="1" class="text-[.58rem] tracking-[.26em] uppercase text-dahon">Our story</div>
+        <h2 data-in="2" class="font-serif leading-[1.02] tracking-[-0.02em] text-[#f5eed8] mt-3" style="font-size:clamp(1.7rem,4vw,4.5rem)">Three years in.<br>Still pouring.</h2>
+        <div data-in="3" class="w-14 h-px opacity-50 my-4" style="background:#5a8a3a"></div>
+        <p data-in="4" class="leading-[1.9] max-w-[320px]" style="font-size:clamp(.78rem,1.15vw,.95rem);color:rgba(245,238,216,.7)">The menu changed. The music changed. What we are trying to do has not.</p>
+      </div>
+      <div data-in="3" class="flex flex-col justify-center py-[7vw] pl-[2vw] pr-[6vw]" style="background:#14130a">
+        <div class="flex flex-col">
+          <div class="flex gap-6 items-start py-4 border-b" style="border-color:rgba(255,255,255,.06)">
+            <div class="w-[9px] h-[9px] rounded-full flex-shrink-0 bg-dahon border border-dahon mt-[5px]"></div>
+            <div class="font-serif tracking-[-0.02em] text-[#f5eed8] min-w-[3.5rem]" style="font-size:clamp(1rem,2vw,1.7rem)">2021</div>
+            <div class="flex-1">
+              <div class="text-[.54rem] tracking-[.18em] uppercase text-dahon mb-1">First location</div>
+              <p class="leading-[1.68]" style="font-size:clamp(.68rem,.98vw,.82rem);color:rgba(245,238,216,.45)">Maria found an old bakery on a quiet street in Maginhawa. Three months of renovation. Soft-opened to 40 people who told 400.</p>
+            </div>
+          </div>
+          <div class="flex gap-6 items-start py-4 border-b" style="border-color:rgba(255,255,255,.06)">
+            <div class="w-[9px] h-[9px] rounded-full flex-shrink-0 bg-dahon border border-dahon mt-[5px]"></div>
+            <div class="font-serif tracking-[-0.02em] text-[#f5eed8] min-w-[3.5rem]" style="font-size:clamp(1rem,2vw,1.7rem)">2022</div>
+            <div class="flex-1">
+              <div class="text-[.54rem] tracking-[.18em] uppercase text-dahon mb-1">Roastery opened</div>
+              <p class="leading-[1.68]" style="font-size:clamp(.68rem,.98vw,.82rem);color:rgba(245,238,216,.45)">Started roasting on-site. Andres joined. For the first time we controlled the full process from green bean to cup.</p>
+            </div>
+          </div>
+          <div class="flex gap-6 items-start py-4 border-b" style="border-color:rgba(255,255,255,.06)">
+            <div class="w-[9px] h-[9px] rounded-full flex-shrink-0 bg-dahon border border-dahon mt-[5px]"></div>
+            <div class="font-serif tracking-[-0.02em] text-[#f5eed8] min-w-[3.5rem]" style="font-size:clamp(1rem,2vw,1.7rem)">2024</div>
+            <div class="flex-1">
+              <div class="text-[.54rem] tracking-[.18em] uppercase text-dahon mb-1">Second location</div>
+              <p class="leading-[1.68]" style="font-size:clamp(.68rem,.98vw,.82rem);color:rgba(245,238,216,.45)">Opened our second branch in BGC. Same obsession, different neighborhood. Eight months to hire six people. Intentional.</p>
+            </div>
+          </div>
+          <div class="flex gap-6 items-start py-4 border-b" style="border-color:rgba(255,255,255,.06)">
+            <div class="w-[9px] h-[9px] rounded-full flex-shrink-0 border border-dahon mt-[5px]" style="box-shadow:0 0 0 4px rgba(90,138,58,.14)"></div>
+            <div class="font-serif tracking-[-0.02em] text-[#f5eed8] min-w-[3.5rem]" style="font-size:clamp(1rem,2vw,1.7rem)">2026</div>
+            <div class="flex-1">
+              <div class="text-[.54rem] tracking-[.18em] uppercase text-dahon mb-1">Now</div>
+              <p class="leading-[1.68]" style="font-size:clamp(.68rem,.98vw,.82rem);color:rgba(245,238,216,.45)">840 daily visitors. Two roasters. Twelve farm partnerships. Series A conversations have begun — on our terms.</p>
+            </div>
+          </div>
+          <div class="flex gap-6 items-start py-4">
+            <div class="w-[9px] h-[9px] rounded-full flex-shrink-0 border mt-[5px]" style="border-color:rgba(255,255,255,.18);background:#14130a"></div>
+            <div class="font-serif tracking-[-0.02em] min-w-[3.5rem]" style="font-size:clamp(1rem,2vw,1.7rem);color:rgba(245,238,216,.2)">2027</div>
+            <div class="flex-1">
+              <div class="text-[.54rem] tracking-[.18em] uppercase mb-1" style="color:rgba(90,138,58,.28)">What is next</div>
+              <p class="leading-[1.68]" style="font-size:clamp(.68rem,.98vw,.82rem);color:rgba(245,238,216,.16)">Third location. Subscription roastery. Training academy. And a real café garden we have been dreaming about since day one.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 12 ROADMAP -->
+  <div class="slide" id="s12" data-label="Roadmap 2026">
+    <div class="absolute inset-0">
+      <img src="https://i.pinimg.com/736x/28/ef/70/28ef7072b67c73b3d75730ee9bb4a350.jpg" class="w-full h-full object-cover" style="filter:sepia(70%) brightness(.15)" alt="Coffee beans"/>
+    </div>
+    <div class="relative z-10 flex flex-col justify-center h-full px-[8vw] py-[7vw]">
+      <div data-in="1" class="text-[.58rem] tracking-[.26em] uppercase text-dahon">Roadmap 2026</div>
+      <h2 data-in="2" class="font-serif leading-[1.02] tracking-[-0.02em] text-[#f5eed8] mt-3" style="font-size:clamp(1.7rem,4vw,4rem)">What is in<br>the works.</h2>
+      <div data-in="3" class="mt-6 max-w-[760px] w-full">
+        <div class="grid py-4 border-b items-center gap-8" style="grid-template-columns:5rem 1px 1fr auto;border-color:rgba(255,255,255,.06)">
+          <div class="font-serif tracking-[-0.02em] text-[#f5eed8]" style="font-size:clamp(.95rem,1.9vw,1.65rem)">Q1</div>
+          <div class="w-px self-stretch" style="background:rgba(255,255,255,.06)"></div>
+          <div class="pl-1">
+            <div class="text-[.54rem] tracking-[.18em] uppercase text-dahon mb-1">Delivered</div>
+            <div class="leading-[1.62]" style="font-size:clamp(.71rem,1.05vw,.86rem);color:rgba(245,238,216,.7)">New espresso menu — cleaner, shorter, better explained. Includes a full filter bar for guests who genuinely want to taste the origin.</div>
+          </div>
+          <div class="text-[.5rem] tracking-[.14em] uppercase border text-dahon px-2 py-0.5 whitespace-nowrap" style="border-color:#5a8a3a">Done</div>
+        </div>
+        <div class="grid py-4 border-b items-center gap-8" style="grid-template-columns:5rem 1px 1fr auto;border-color:rgba(255,255,255,.06)">
+          <div class="font-serif tracking-[-0.02em] text-[#f5eed8]" style="font-size:clamp(.95rem,1.9vw,1.65rem)">Q2</div>
+          <div class="w-px self-stretch" style="background:rgba(255,255,255,.06)"></div>
+          <div class="pl-1">
+            <div class="text-[.54rem] tracking-[.18em] uppercase text-dahon mb-1">In progress</div>
+            <div class="leading-[1.62]" style="font-size:clamp(.71rem,1.05vw,.86rem);color:rgba(245,238,216,.7)">Subscription roastery — monthly bags, tasting notes written by Andres, optional calls with our farm partners.</div>
+          </div>
+          <div class="text-[.5rem] tracking-[.14em] uppercase border text-dahon px-2 py-0.5 whitespace-nowrap" style="border-color:#5a8a3a">Active</div>
+        </div>
+        <div class="grid py-4 border-b items-center gap-8 opacity-40" style="grid-template-columns:5rem 1px 1fr auto;border-color:rgba(255,255,255,.06)">
+          <div class="font-serif tracking-[-0.02em]" style="font-size:clamp(.95rem,1.9vw,1.65rem);color:rgba(245,238,216,.18)">Q3</div>
+          <div class="w-px self-stretch" style="background:rgba(255,255,255,.06)"></div>
+          <div class="pl-1">
+            <div class="text-[.54rem] tracking-[.18em] uppercase mb-1" style="color:rgba(90,138,58,.28)">Planned</div>
+            <div class="leading-[1.62]" style="font-size:clamp(.71rem,1.05vw,.86rem);color:rgba(245,238,216,.2)">Third location in Poblacion — new neighborhood, same careful pace. Lease is signed. Maria is arguing with the architect about lighting.</div>
+          </div>
+          <div class="text-[.5rem] tracking-[.14em] uppercase border px-2 py-0.5 whitespace-nowrap" style="border-color:rgba(255,255,255,.1);color:rgba(245,238,216,.22)">Soon</div>
+        </div>
+        <div class="grid py-4 items-center gap-8 opacity-40" style="grid-template-columns:5rem 1px 1fr auto">
+          <div class="font-serif tracking-[-0.02em]" style="font-size:clamp(.95rem,1.9vw,1.65rem);color:rgba(245,238,216,.18)">Q4</div>
+          <div class="w-px self-stretch" style="background:rgba(255,255,255,.06)"></div>
+          <div class="pl-1">
+            <div class="text-[.54rem] tracking-[.18em] uppercase mb-1" style="color:rgba(90,138,58,.28)">On the horizon</div>
+            <div class="leading-[1.62]" style="font-size:clamp(.71rem,1.05vw,.86rem);color:rgba(245,238,216,.2)">Barista training academy — public classes, professional certification, and a proper space to teach the thing we care about most.</div>
+          </div>
+          <div class="text-[.5rem] tracking-[.14em] uppercase border px-2 py-0.5 whitespace-nowrap" style="border-color:rgba(255,255,255,.1);color:rgba(245,238,216,.22)">Later</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13 CLOSE -->
+  <div class="slide" id="s13" data-label="Closing">
+    <div class="absolute inset-0">
+      <img src="https://images.unsplash.com/photo-1500576992153-0271099def59?w=1400&q=80&fit=crop" class="w-full h-full object-cover" style="filter:sepia(50%) brightness(.26)" alt="Morning"/>
+      <div class="absolute inset-0" style="background:radial-gradient(ellipse at center,transparent 20%,rgba(20,19,10,.88) 100%)"></div>
+    </div>
+    <div class="relative z-10 flex flex-col items-center justify-center h-full text-center">
+      <div data-in="1" class="text-[.58rem] tracking-[.26em] uppercase text-dahon">Thank you</div>
+      <h1 data-in="2" class="font-serif leading-[.95] tracking-[-0.03em] text-[#f5eed8] mt-4" style="font-size:clamp(3rem,9vw,9.5rem)">Come in<br><span class="text-dahon" style="font-family:'Instrument Serif',serif;font-style:italic">and stay a while.</span></h1>
+      <div data-in="3" class="w-14 h-px opacity-50 my-4 mx-auto" style="background:#5a8a3a"></div>
+      <p data-in="4" class="leading-[1.9] max-w-[370px]" style="font-size:clamp(.78rem,1.15vw,.95rem);color:rgba(245,238,216,.45)">Escafe · Escape Through Coffee  <br>escafe.ph</p>
+    </div>
+  </div>
+
+  <!-- 14 SOCIAL MEDIA -->
+  <div class="slide" id="s14" data-label="Follow Us">
+    <div class="absolute inset-0">
+      <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=75&fit=crop" class="w-full h-full object-cover" style="filter:sepia(60%) brightness(.12)" alt="Café"/>
+      <div class="absolute inset-0" style="background:rgba(20,19,10,.82)"></div>
+    </div>
+    <div class="relative z-10 flex flex-col items-center justify-center h-full text-center px-[8vw]">
+      <div data-in="1" class="text-[.58rem] tracking-[.26em] uppercase text-dahon">Stay connected</div>
+      <h2 data-in="2" class="font-serif leading-[1.02] tracking-[-0.02em] text-[#f5eed8] mt-3" style="font-size:clamp(2rem,5vw,5rem)">Find us<br><span style="font-family:'Instrument Serif',serif;font-style:italic;color:#5a8a3a">everywhere.</span></h2>
+      <div data-in="3" class="w-14 h-px opacity-50 my-5 mx-auto" style="background:#5a8a3a"></div>
+
+      <div data-in="4" class="grid grid-cols-2 gap-3 mt-2 w-full max-w-[680px]">
+
+        <!-- Instagram -->
+        <div class="soc-card" style="border-radius:4px">
+          <div class="soc-icon" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="#fff" stroke="none"/></svg>
+          </div>
+          <div class="text-left">
+            <div class="text-[.52rem] tracking-[.18em] uppercase text-dahon mb-0.5">Instagram</div>
+            <div class="text-[#f5eed8]" style="font-size:clamp(.78rem,1.1vw,.95rem)">@escafe</div>
+            <div class="text-[.6rem] mt-0.5" style="color:rgba(245,238,216,.35)">Daily brews, behind-the-scenes &amp; farm visits</div>
+          </div>
+        </div>
+
+        <!-- TikTok -->
+        <div class="soc-card" style="border-radius:4px">
+          <div class="soc-icon" style="background:#000">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/></svg>
+          </div>
+          <div class="text-left">
+            <div class="text-[.52rem] tracking-[.18em] uppercase text-dahon mb-0.5">TikTok</div>
+            <div class="text-[#f5eed8]" style="font-size:clamp(.78rem,1.1vw,.95rem)">@escafe</div>
+            <div class="text-[.6rem] mt-0.5" style="color:rgba(245,238,216,.35)">Brewing tutorials &amp; café life videos</div>
+          </div>
+        </div>
+
+        <!-- Facebook -->
+        <div class="soc-card" style="border-radius:4px">
+          <div class="soc-icon" style="background:#1877f2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.514c-1.491 0-1.956.93-1.956 1.883v2.27h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+          </div>
+          <div class="text-left">
+            <div class="text-[.52rem] tracking-[.18em] uppercase text-dahon mb-0.5">Facebook</div>
+            <div class="text-[#f5eed8]" style="font-size:clamp(.78rem,1.1vw,.95rem)">Escafe</div>
+            <div class="text-[.6rem] mt-0.5" style="color:rgba(245,238,216,.35)">Events, updates &amp; community stories</div>
+          </div>
+        </div>
+
+        <!-- YouTube -->
+        <div class="soc-card" style="border-radius:4px">
+          <div class="soc-icon" style="background:#ff0000">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+          </div>
+          <div class="text-left">
+            <div class="text-[.52rem] tracking-[.18em] uppercase text-dahon mb-0.5">YouTube</div>
+            <div class="text-[#f5eed8]" style="font-size:clamp(.78rem,1.1vw,.95rem)">Escafe</div>
+            <div class="text-[.6rem] mt-0.5" style="color:rgba(245,238,216,.35)">Long-form roastery &amp; origin documentaries</div>
+          </div>
+        </div>
+
+        <!-- X / Twitter -->
+        <div class="soc-card" style="border-radius:4px">
+          <div class="soc-icon" style="background:#000">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </div>
+          <div class="text-left">
+            <div class="text-[.52rem] tracking-[.18em] uppercase text-dahon mb-0.5">X · Twitter</div>
+            <div class="text-[#f5eed8]" style="font-size:clamp(.78rem,1.1vw,.95rem)">@escafe</div>
+            <div class="text-[.6rem] mt-0.5" style="color:rgba(245,238,216,.35)">Quick thoughts on coffee &amp; culture</div>
+          </div>
+        </div>
+
+        <!-- Website -->
+        <div class="soc-card" style="border-radius:4px">
+          <div class="soc-icon" style="background:rgba(90,138,58,.25);border:1px solid rgba(90,138,58,.4)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5a8a3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <div class="text-left">
+            <div class="text-[.52rem] tracking-[.18em] uppercase text-dahon mb-0.5">Website</div>
+            <div class="text-[#f5eed8]" style="font-size:clamp(.78rem,1.1vw,.95rem)">escafe.vercel.app</div>
+            <div class="text-[.6rem] mt-0.5" style="color:rgba(245,238,216,.35)">Menu, locations, subscriptions &amp; more</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div data-in="5" class="mt-8 text-[.54rem] tracking-[.2em] uppercase" style="color:rgba(245,238,216,.18)">Escafe · Davao City</div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- NAV ARROWS -->
+<button id="nav-prev" onclick="go(-1)">←</button>
+<button id="nav-next" onclick="go(1)">→</button>
+
+<!-- Slide counter -->
+<div id="slide-counter-wrap" class="fixed z-[190]" style="bottom:24px;left:50%;transform:translateX(-50%)">
+  <span id="slide-counter" class="text-[.55rem] tracking-[.2em]" style="color:rgba(245,238,216,.28)">01 / 14</span>
+</div>
+
+<!-- HINT -->
+<div class="fixed z-[80] text-[.48rem] tracking-[.16em] uppercase" style="bottom:10px;right:14px;color:rgba(245,238,216,.1)">← → · Space · F</div>
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let cur = 0, busy = false;
+const pad = n => String(n).padStart(2,'0');
+
+const BG_IMGS = [
+  'https://i.pinimg.com/736x/62/f7/d0/62f7d0ec48250067cfa25668d02a4f45.jpg',
+  'https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=200&q=60&fit=crop',
+  null,
+  'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=200&q=60&fit=crop',
+  'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200&q=60&fit=crop',
+  'https://images.unsplash.com/photo-1567521464027-f127ff144326?w=200&q=60&fit=crop',
+  'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=200&q=60&fit=crop',
+  'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=200&q=60&fit=crop',
+  'https://images.unsplash.com/photo-1453614512568-c4024d13c247?w=200&q=60&fit=crop',
+  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=60&fit=crop',
+  'https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=200&q=60&fit=crop',
+  'https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=200&q=60&fit=crop',
+  'https://images.unsplash.com/photo-1500576992153-0271099def59?w=200&q=60&fit=crop',
+  'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=200&q=60&fit=crop',
+];
+const COLORS = ['#1a1208','#14130a','#1c1810','#14130a','#0e0c08','#1a1208','#14130a','#14130a','#0e0c08','#14130a','#1a1208','#0e0c08','#14130a','#0e0c08'];
+
+const panel = document.getElementById('slide-panel');
+
+slides.forEach((s, i) => {
+  const label = s.getAttribute('data-label') || `Slide ${i+1}`;
+  const img = BG_IMGS[i];
+  const pDiv = document.createElement('div');
+  pDiv.className = 'thumb-item' + (i===0?' active-thumb':'');
+  pDiv.onclick = () => goTo(i);
+  pDiv.innerHTML = `
+    <div style="height:72px;background:${img ? `url(${img}) center/cover` : COLORS[i]};position:relative;">
+      ${img ? `<div style="position:absolute;inset:0;background:rgba(10,8,4,.38);filter:sepia(40%) brightness(.7)"></div>` : ''}
+      <span class="thumb-num" style="position:absolute;top:4px;left:5px">${pad(i+1)}</span>
+    </div>
+    <div class="thumb-label">${label}</div>`;
+  panel.appendChild(pDiv);
+});
+
+function updateUI() {
+  const lbl = `${pad(cur+1)} / ${pad(total)}`;
+  document.getElementById('slide-counter').textContent = lbl;
+  document.getElementById('hud-num').textContent = lbl;
+  document.getElementById('progress').style.width = `${((cur+1)/total)*100}%`;
+  panel.querySelectorAll('.thumb-item').forEach((el,i) => {
+    el.classList.toggle('active-thumb', i===cur);
+  });
+  const activePanelThumb = panel.querySelectorAll('.thumb-item')[cur];
+  if(activePanelThumb) activePanelThumb.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function triggerAnims(s) {
+  s.classList.remove('ready');
+  void s.offsetWidth;
+  s.classList.add('ready');
+}
+
+function goTo(idx) {
+  if(busy || idx<0 || idx>=total || idx===cur) return;
+  busy = true;
+  const leaving = slides[cur];
+  leaving.classList.add('anim-out');
+  leaving.classList.remove('active','ready');
+  setTimeout(() => leaving.classList.remove('anim-out'), 460);
+  cur = idx;
+  const entering = slides[cur];
+  entering.classList.add('active','anim-in');
+  setTimeout(() => {
+    entering.classList.remove('anim-in');
+    triggerAnims(entering);
+    busy = false;
+  }, 50);
+  updateUI();
+}
+
+function go(d){ goTo(cur+d); }
+
+let panelOpen = false;
+function togglePanel(){
+  panelOpen = !panelOpen;
+  document.getElementById('slide-panel').classList.toggle('open', panelOpen);
+}
+
+document.addEventListener('keydown', e => {
+  if([' ','ArrowRight','ArrowDown'].includes(e.key)){e.preventDefault();go(1);}
+  if(['ArrowLeft','ArrowUp'].includes(e.key)){e.preventDefault();go(-1);}
+  if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+  if(e.key==='Escape'&&panelOpen){togglePanel();}
+});
+
+document.getElementById('deck').addEventListener('click', e => {
+  if(!e.target.closest('button')) go(1);
+});
+
+updateUI();
+setTimeout(()=>triggerAnims(slides[0]),100);
+</script>
+</body>
+</html>
